@@ -45,4 +45,22 @@ def print_variation_results_sliced(
     print('Variation ({} of {} runs found): {}'.format(count_runs, num_runs, ', '.join(sorted(training_variation))))
 
     for shape in grouped_by_shape:
-        num_tables = int(np.ceil(np.prod(shape) / num_v
+        num_tables = int(np.ceil(np.prod(shape) / num_values_per_table))
+        for i in range(num_tables):
+            indices = np.arange(num_values_per_table) + i * num_values_per_table
+            indices = indices[indices < np.prod(shape)]
+            indices = np.unravel_index(indices, shape)
+
+            text_grid = TextGrid()
+            text_grid.append_value('name', column_padding=2)
+            # indices is a tuple of arrays, length 1 is a special case
+            for index in indices[0] if len(indices) == 1 else zip(indices):
+                text_grid.append_value('{}'.format(index), line_style=TextWrapStyle.right_justify, column_padding=2)
+            text_grid.next_row()
+            value_format = '{' + ':.{}f'.format(field_precision) + '}'
+            for name in grouped_by_shape[shape]:
+                text_grid.append_value(name, column_padding=2)
+                current_values = values[name][indices]
+                for value in current_values:
+                    text_grid.append_value(
+              
