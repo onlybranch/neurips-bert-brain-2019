@@ -63,4 +63,28 @@ def print_variation_results_sliced(
                 current_values = values[name][indices]
                 for value in current_values:
                     text_grid.append_value(
-              
+                        value_format.format(value), line_style=TextWrapStyle.right_justify, column_padding=2)
+                text_grid.next_row()
+
+            write_text_grid_to_console(text_grid, width='tight')
+            print('')
+
+    print('')
+    print('')
+
+
+def print_variation_results(paths, variation_set_name, training_variation, aux_loss, num_runs, field_precision=2,
+                            **loss_handler_kwargs):
+
+    aggregated, count_runs = read_variation_results(paths, variation_set_name, training_variation, aux_loss, num_runs,
+                                                    **loss_handler_kwargs)
+
+    metrics = list()
+    for metric in output_order:
+        if any(metric in aggregated[name] for name in aggregated):
+            metrics.append(metric)
+
+    text_grid = TextGrid()
+    text_grid.append_value('name', column_padding=2)
+    for metric in metrics:
+        text_grid.append_value(metric, line_style=TextWrapSty
