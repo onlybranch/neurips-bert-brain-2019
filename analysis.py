@@ -26,4 +26,23 @@ output_order = (
     'f1')
 
 
-def print_variation_results_sliced
+def print_variation_results_sliced(
+        paths, variation_set_name, training_variation, aux_loss, num_runs, metric='pove',
+        field_precision=2, num_values_per_table=10, **loss_handler_kwargs):
+
+    aggregated, count_runs = read_variation_results(paths, variation_set_name, training_variation, aux_loss, num_runs,
+                                                    compute_scalar=False, **loss_handler_kwargs)
+
+    values = OrderedDict((name, np.nanmean(aggregated[name].values(metric), axis=0)) for name in aggregated)
+
+    grouped_by_shape = OrderedDict()
+    for name in values:
+        if values[name].shape not in grouped_by_shape:
+            grouped_by_shape[values[name].shape] = [name]
+        else:
+            grouped_by_shape[values[name].shape].append(name)
+
+    print('Variation ({} of {} runs found): {}'.format(count_runs, num_runs, ', '.join(sorted(training_variation))))
+
+    for shape in grouped_by_shape:
+        num_tables = int(np.ceil(np.prod(shape) / num_v
