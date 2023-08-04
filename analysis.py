@@ -135,4 +135,28 @@ def data_combine_subtract(x, y):
 
 def default_filter_combine(result_query, x, y):
     if result_query.metric == 'pove':
-        return np.log
+        return np.logical_or(x >= 0.05, y >= 0.05)
+    elif result_query.metric == 'k_vs_k':
+        return np.logical_or(x >= 0.5, y >= 0.5)
+    else:
+        return np.full(x.shape, True)
+
+
+def print_min_max(
+        result_queries,
+        key_format='{combined_variation_set_name}, {combined_training_variation}, {key}, {metric}',
+        data_combine_fn=data_combine_subtract,
+        filter_combine_fn=default_filter_combine,
+        key_shorten_fn=None):
+    for result in result_queries:
+        if len(result) == 3:
+            result_query, data_1, data_2 = result
+            data = data_combine_fn(data_1, data_2)
+            if filter_combine_fn is not None:
+                data = np.where(filter_combine_fn(result_query, data_1, data_2), data, np.nan)
+        else:
+            result_query, data = result
+        vmin, vmax = np.nanmin(data), np.nanmax(data)
+        print('{key}, min: {vmin}, max: {vmax}'.format(
+            key=key_format.format(
+                **result_query.as_dict_with_combined_second(key_shorten_fn=key_shorten_fn)), 
