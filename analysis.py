@@ -105,4 +105,34 @@ def print_variation_results(paths, variation_set_name, training_variation, aux_l
         training_variation_name = ', '.join(sorted(training_variation))
     print('Variation ({} of {} runs found): {}'.format(count_runs, num_runs, training_variation_name))
     write_text_grid_to_console(text_grid, width='tight')
-    p
+    print('')
+    print('')
+
+
+def text_heat_map_html(words, scores, vmin=None, vmax=None, cmap=None, text_color=None):
+    from matplotlib import cm, colors
+    cmap = cm.ScalarMappable(colors.Normalize(vmin=vmin, vmax=vmax), cmap=cmap)
+    fmt = '<span style="background-color:{hex}{text_color}">{word}</span>'
+    fmt = fmt.format(hex='{hex}', word='{word}', text_color='' if text_color is None else ';color:{text_color}')
+    word_colors = cmap.to_rgba(scores)
+    return '&nbsp;'.join(
+        [fmt.format(word=w, hex=colors.to_hex(c), text_color=text_color) for w, c in zip(words, word_colors)])
+
+
+def remove_prefix(prefix, x):
+    if x.startswith(prefix):
+        return x[len(prefix):]
+    return x
+
+
+def remove_hp_fmri_prefix(x):
+    return remove_prefix('hp_fmri_', x)
+
+
+def data_combine_subtract(x, y):
+    return x - y
+
+
+def default_filter_combine(result_query, x, y):
+    if result_query.metric == 'pove':
+        return np.log
