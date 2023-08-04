@@ -189,4 +189,12 @@ def min_max_per_group(
             vmin = np.nanpercentile(data, percentile_min, interpolation='higher').item()
         else:
             vmin = np.nanmin(data).item()
-  
+        if percentile_max is not None:
+            vmax = np.nanpercentile(data, percentile_max, interpolation='lower').item()
+        else:
+            vmax = np.nanmax(data).item()
+        if key not in vmin_vmax:
+            vmin_vmax[key] = list(), list()
+        vmin_vmax[key][0].append(vmin)
+        vmin_vmax[key][1].append(vmax)
+    return vmin_vmax
