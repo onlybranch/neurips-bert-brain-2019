@@ -87,4 +87,22 @@ def print_variation_results(paths, variation_set_name, training_variation, aux_l
     text_grid = TextGrid()
     text_grid.append_value('name', column_padding=2)
     for metric in metrics:
-        text_grid.append_value(metric, line_style=TextWrapSty
+        text_grid.append_value(metric, line_style=TextWrapStyle.right_justify, column_padding=2)
+    text_grid.next_row()
+    value_format = '{' + ':.{}f'.format(field_precision) + '}'
+    for name in aggregated:
+        text_grid.append_value(name, column_padding=2)
+        for metric in metrics:
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=RuntimeWarning)
+                value = np.nanmean(aggregated[name].values(metric)) if metric in aggregated[name] else np.nan
+            text_grid.append_value(value_format.format(value), line_style=TextWrapStyle.right_justify, column_padding=2)
+        text_grid.next_row()
+
+    if isinstance(training_variation, TrainingVariation):
+        training_variation_name = str(training_variation)
+    else:
+        training_variation_name = ', '.join(sorted(training_variation))
+    print('Variation ({} of {} runs found): {}'.format(count_runs, num_runs, training_variation_name))
+    write_text_grid_to_console(text_grid, width='tight')
+    p
