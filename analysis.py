@@ -159,4 +159,34 @@ def print_min_max(
         vmin, vmax = np.nanmin(data), np.nanmax(data)
         print('{key}, min: {vmin}, max: {vmax}'.format(
             key=key_format.format(
-                **result_query.as_dict_with_combined_second(key_shorten_fn=key_shorten_fn)), 
+                **result_query.as_dict_with_combined_second(key_shorten_fn=key_shorten_fn)), vmin=vmin, vmax=vmax))
+
+
+def min_max_default_group_key_fn(result):
+    if len(result) == 3:
+        return result[0].metric, 'combined'
+    return result[0].metric
+
+
+def min_max_per_group(
+        result_queries,
+        group_key_fn=min_max_default_group_key_fn,
+        data_combine_fn=data_combine_subtract,
+        filter_combine_fn=default_filter_combine,
+        percentile_min=None,
+        percentile_max=None):
+    vmin_vmax = dict()
+    for result in result_queries:
+        key = group_key_fn(result)
+        if len(result) == 3:
+            result_query, data_1, data_2 = result
+            data = data_combine_fn(data_1, data_2)
+            if filter_combine_fn is not None:
+                data = np.where(filter_combine_fn(result_query, data_1, data_2), data, np.nan)
+        else:
+            result_query, data = result
+        if percentile_min is not None:
+            vmin = np.nanpercentile(data, percentile_min, interpolation='higher').item()
+        else:
+            vmin = np.nanmin(data).item()
+  
