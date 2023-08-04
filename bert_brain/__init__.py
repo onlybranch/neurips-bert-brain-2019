@@ -20,4 +20,21 @@ from .false_discovery_rate import *
 from .loss_curves import *
 from .paired_metrics import *
 from .result_output import *
-from .sentence_leve
+from .sentence_level_metrics import *
+from .settings import *
+from .train_eval import *
+
+__all__ = ['common', 'data_sets', 'modeling', 'experiments', 'false_discovery_rate', 'loss_curves', 'paired_metrics',
+           'aggregate_metrics', 'result_output', 'sentence_level_metrics', 'settings', 'train_eval']
+__all__.extend(common.__all__)
+__all__.extend(data_sets.__all__)
+__all__.extend(modeling.__all__)
+__all__.extend(aggregate_metrics.__all__)
+__all__.extend(experiments.__all__)
+__all__.extend(false_discovery_rate.__all__)
+__all__.extend(loss_curves.__all__)
+__all__.extend(paired_metrics.__all__)
+__all__.extend(result_output.__all__)
+__all__.extend(sentence_level_metrics.__all__)
+__all__.extend(settings.__all__)
+__all__.extend(train_eval.__all__)
