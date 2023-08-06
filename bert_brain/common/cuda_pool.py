@@ -32,4 +32,42 @@ def cuda_auto_empty_cache_context(device):
         with torch.cuda.device(device) as device_context:
             yield device_context
             gc.collect()
-            
+            torch.cuda.empty_cache()
+
+
+def _set_device_id_and_initialize(device_queue, no_available_queue, initializer, initargs):
+
+    try:
+        device_id = device_queue.get(timeout=5)
+    except queue.Empty:
+        no_available_queue.put(1)
+        device_id = device_queue.get()
+
+    if device_id < 0:
+        return
+
+    print('binding to device {}'.format(device_id))
+
+    torch.cuda.set_device(device_id)
+
+    if initializer is not None:
+        if initargs is None:
+            initargs = ()
+        initializer(*initargs)
+
+
+def _monitor_devices(max_workers, min_memory, starting_ids, device_queue, no_available_queue):
+
+    current_use = dict()
+    for device_id in starting_ids:
+        if device_id not in current_use:
+            current_use[device_id] = min_memory
+        else:
+            current_use[device_id] += min_memory
+
+    needed_count = 0
+    while True:
+        try:
+            need = no_available_queue.get(timeout=100)
+            if need == 2:  # signals shutdown
+                for _ in range(max_workers):  # si
