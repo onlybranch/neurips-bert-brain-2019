@@ -131,4 +131,38 @@ def _monitor_progress(progress_t, progress_queue):
         if p == _progress_stop_sentinel:
             return
         if p < 0:
-          
+            progress_t.n = progress_t.n - p
+            progress_t.refresh()
+        else:
+            progress_t.update(p)
+
+
+class ProgressContext(object):
+
+    def __init__(self, *args, **kwargs):
+        self._args = args
+        self._kwargs = kwargs
+        self._mp_context = None
+        self._progress_queue = None
+        self._progress_bar = None
+
+    @property
+    def mp_context(self):
+        return self._mp_context
+
+    @property
+    def progress_queue(self):
+        return self._progress_queue
+
+    @property
+    def progress_bar(self):
+        return self._progress_bar
+
+    def __enter__(self):
+        self._mp_context = get_context('spawn')
+        self._progress_queue = self.mp_context.Queue()
+        self._progress_bar = tqdm(*self._args, **self._kwargs)
+        self._args = None
+        self._kwargs = None
+        progress_monitor = Thread(target=_monitor_progress, args=(self.progress_bar, self.progress_queue), daemon=True)
+        progress
