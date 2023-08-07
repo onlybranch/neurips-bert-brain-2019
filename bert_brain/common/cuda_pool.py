@@ -70,4 +70,27 @@ def _monitor_devices(max_workers, min_memory, starting_ids, device_queue, no_ava
         try:
             need = no_available_queue.get(timeout=100)
             if need == 2:  # signals shutdown
-                for _ in range(max_workers):  # si
+                for _ in range(max_workers):  # signal workers waiting on a device to exit
+                    device_queue.put(-1)
+                return
+            else:
+                needed_count += 1
+        except queue.Empty:
+            pass
+
+        if needed_count > 0:
+            memory_info = cuda_memory_info()
+            selected_free = None
+            selected_device = None
+            for device_id, device_memory in enumerate(memory_info):
+                projected_use = current_use[device_id] if device_id in current_use else 0
+                device_free = device_memory.free + torch.cuda.memory_allocated(device_id) - projected_use
+                if device_free > min_memory and (selected_free is None or device_free > selected_free):
+                    selected_free = device_free
+                    selected_device = device_id
+
+            if selected_device is not None:
+                if selected_device not in current_use:
+                    current_use[selected_device] = min_memory
+                else:
+           
