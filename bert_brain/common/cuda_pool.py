@@ -165,4 +165,34 @@ class ProgressContext(object):
         self._args = None
         self._kwargs = None
         progress_monitor = Thread(target=_monitor_progress, args=(self.progress_bar, self.progress_queue), daemon=True)
-        progress
+        progress_monitor.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.progress_bar.close()
+        self.progress_queue.put(_progress_stop_sentinel)
+
+
+def cuda_map_unordered(
+        min_memory, func, iterables,
+        max_workers=None, mp_context=None, initializer=None, initargs=None,
+        num_cuda_memory_retries=0, chunksize=1):
+
+    items = iterables
+
+    if num_cuda_memory_retries > 0:
+        items = map(lambda args: OutOfMemoryRetry(func, args), zip(*items))
+
+    finished = False
+
+    while not finished:
+        retries = list()
+
+        with cuda_pool_executor(
+                min_memory, max_workers, mp_context=mp_context, initializer=initializer, initargs=initargs) as ex:
+
+            if num_cuda_memory_retries > 0:
+                result = ex.map(_cuda_memory_retry_wrap, items, chunksize=chunksize)
+                for item in result:
+                    if item.exception is not None:
+                        if item.num_tries < num_cuda_memory_r
