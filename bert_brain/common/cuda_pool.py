@@ -93,4 +93,42 @@ def _monitor_devices(max_workers, min_memory, starting_ids, device_queue, no_ava
                 if selected_device not in current_use:
                     current_use[selected_device] = min_memory
                 else:
-           
+                    current_use[selected_device] += min_memory
+                device_queue.put(selected_device)
+                needed_count -= 1
+
+
+def _cuda_memory_retry_wrap(retry_item):
+    try:
+        args = () if retry_item.args is None else retry_item.args
+        retry_item.result = retry_item.func(*args)
+        retry_item.exception = None
+    except RuntimeError as e:
+        if str(e) != 'CUDA error: out of memory':
+            raise
+        retry_item.result = None
+        retry_item.exception = e
+
+    return retry_item
+
+
+class OutOfMemoryRetry(object):
+
+    def __init__(self, func, args):
+        self.func = func
+        self.args = args
+        self.num_tries = 0
+        self.result = None
+        self.exception = None
+
+
+_progress_stop_sentinel = 'kill_progress_monitor'
+
+
+def _monitor_progress(progress_t, progress_queue):
+    while True:
+        p = progress_queue.get()
+        if p == _progress_stop_sentinel:
+            return
+        if p < 0:
+          
