@@ -195,4 +195,33 @@ def cuda_map_unordered(
                 result = ex.map(_cuda_memory_retry_wrap, items, chunksize=chunksize)
                 for item in result:
                     if item.exception is not None:
-                        if item.num_tries < num_cuda_memory_r
+                        if item.num_tries < num_cuda_memory_retries:
+                            item.num_tries += 1
+                            item.exception = None
+                            item.result = None
+                            retries.append(item)
+                        else:
+                            raise item.exception
+                    else:
+                        yield item.result
+            else:
+                for item in ex.map(func, *items, chunksize=chunksize):
+                    yield item
+
+            finished = len(retries) == 0
+            items = retries
+
+
+def _get_chunks(*iterables, chunksize):
+    """ Iterates over zip()ed iterables in chunks. """
+    it = zip(*iterables)
+    while True:
+        chunk = tuple(itertools.islice(it, chunksize))
+        if not chunk:
+            return
+        yield chunk
+
+
+def _process_chunk(fn, chunk):
+    """ Processes a chunk of an iterable passed to map.
+    Runs the function passed to map() o
