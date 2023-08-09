@@ -224,4 +224,42 @@ def _get_chunks(*iterables, chunksize):
 
 def _process_chunk(fn, chunk):
     """ Processes a chunk of an iterable passed to map.
-    Runs the function passed to map() o
+    Runs the function passed to map() on a chunk of the
+    iterable passed to map.
+    This function is run in a separate process.
+    """
+    return [fn(*args) for args in chunk]
+
+
+def _chain_from_iterable_of_lists(iterable):
+    """
+    Specialized implementation of itertools.chain.from_iterable.
+    Each item in *iterable* should be a list.  This function is
+    careful not to keep references to yielded objects.
+    """
+    for element in iterable:
+        element.reverse()
+        while element:
+            yield element.pop()
+
+
+class _RetryItem:
+
+    def __init__(self, should_retry_fn, fn, args, kwargs):
+        self.should_retry_fn = should_retry_fn
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+
+class CudaOutOfMemoryShouldRetry(object):
+
+    def __init__(self, num_retries):
+        self._num_retries = num_retries
+
+    def __call__(self, ex):
+        if str(ex) != 'CUDA error: out of memory':
+            return False
+        if self._num_retries > 0:
+            self._num_retries -= 1
+          
