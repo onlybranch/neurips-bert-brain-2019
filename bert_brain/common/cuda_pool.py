@@ -262,4 +262,32 @@ class CudaOutOfMemoryShouldRetry(object):
             return False
         if self._num_retries > 0:
             self._num_retries -= 1
-          
+            return True
+        return False
+
+
+class CudaPoolExecutor(object):
+
+    @staticmethod
+    def _create_process_pool_executor(min_memory, max_workers, mp_context, initializer, initargs):
+        memory_info = cuda_memory_info()
+        if max_workers is None:
+            max_workers = len(memory_info)
+        if mp_context is None:
+            mp_context = get_context('spawn')
+
+        memory_info = [
+            (device_id, device_info.free) for device_id, device_info in enumerate(memory_info)]
+
+        memory_info = sorted(memory_info, key=lambda id_free_total: (-id_free_total[1], id_free_total[0]))
+
+        device_ids = list()
+        for i in range(max_workers):
+            use, current = divmod(i, len(memory_info))
+            free = memory_info[current][1] - use * min_memory
+            if free >= min_memory:
+                device_ids.append(memory_info[current][0])
+            elif current == 0:
+                break  # the most free one is all used up, so the others must be too
+
+        if len(device_i
