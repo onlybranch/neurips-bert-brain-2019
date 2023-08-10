@@ -290,4 +290,26 @@ class CudaPoolExecutor(object):
             elif current == 0:
                 break  # the most free one is all used up, so the others must be too
 
-        if len(device_i
+        if len(device_ids) == 0:
+            raise ValueError('No devices with enough memory available')
+
+        device_queue = mp_context.Queue()
+        no_available_queue = mp_context.Queue()
+        for device_id in device_ids:
+            device_queue.put(device_id)
+
+        device_monitor = Thread(target=_monitor_devices, args=(
+            max_workers, min_memory, device_ids, device_queue, no_available_queue), daemon=True)
+        device_monitor.start()
+
+        process_pool_executor = ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=mp_context,
+            initializer=_set_device_id_and_initialize,
+            initargs=(device_queue, no_available_queue, initializer, initargs))
+
+        return process_pool_executor, no_available_queue
+
+    def __init__(self, min_memory, max_workers=None, mp_context=None, initializer=None, initargs=()):
+        self._process_pool_executor, self._no_available_queue = CudaPoolExecutor._create_process_pool_executor(
+            min_memory, m
