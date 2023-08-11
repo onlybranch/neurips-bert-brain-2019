@@ -360,4 +360,27 @@ class CudaPoolExecutor(object):
                     # Careful not to keep a reference to the popped future
                     if retry_items:
                         retry_item = retry_items.pop()
-                 
+                    else:
+                        retry_item = None
+
+                    while True:
+                        try:
+                            if timeout is None:
+                                yield fs.pop().result()
+                                retry_item = None
+                            else:
+                                yield fs.pop().result(end_time - time.monotonic())
+                                retry_item = None
+                        except BaseException as ex:
+                            if retry_item is None or not retry_item.should_retry_fn(ex):
+                                raise
+                            else:
+                                fs.append(self._process_pool_executor.submit(retry_item.fn, *retry_item.args))
+            finally:
+                for future in fs:
+                    future.cancel()
+
+        return result_iterator()
+
+    def map_unordered(self, fn, *iterables, timeout=None, num_cuda_memory_retries=0):
+        "
