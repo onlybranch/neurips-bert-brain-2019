@@ -312,4 +312,31 @@ class CudaPoolExecutor(object):
 
     def __init__(self, min_memory, max_workers=None, mp_context=None, initializer=None, initargs=()):
         self._process_pool_executor, self._no_available_queue = CudaPoolExecutor._create_process_pool_executor(
-            min_memory, m
+            min_memory, max_workers, mp_context, initializer, initargs)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown(wait=True)
+
+    def _map(self, fn, *iterables, timeout=None, num_cuda_memory_retries=0):
+        """Returns an iterator equivalent to map(fn, iter).
+        Args:
+            fn: A callable that will take as many arguments as there are
+                passed iterables.
+            timeout: The maximum number of seconds to wait. If None, then there
+                is no limit on the wait time.
+        Returns:
+            An iterator equivalent to: map(func, *iterables) but the calls may
+            be evaluated out-of-order.
+        Raises:
+            TimeoutError: If the entire result iterator could not be generated
+                before the given timeout.
+            Exception: If fn(*args) raises for any values.
+        """
+        if timeout is not None:
+            end_time = timeout + time.monotonic()
+
+        retry_items = None
+   
