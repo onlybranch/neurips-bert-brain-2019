@@ -406,4 +406,25 @@ class CudaPoolExecutor(object):
         fs = dict()
         for args in zip(*iterables):
             retry_item = None
-            if num_cuda_memory_ret
+            if num_cuda_memory_retries > 0:
+                retry_item = _RetryItem(CudaOutOfMemoryShouldRetry(num_cuda_memory_retries), fn, args, {})
+            fs[self._process_pool_executor.submit(fn, *args)] = retry_item
+
+        # Yield must be hidden in closure so that the futures are submitted
+        # before the first iterator value is required.
+        def result_iterator(futures):
+            futures = dict(futures)
+            next_fs = dict()
+            try:
+                while len(futures) > 0:
+                    next_fs = dict()
+                    if timeout is None:
+                        iterable = as_completed(futures)
+                    else:
+                        iterable = as_completed(futures, end_time - time.monotonic())
+                    for future in iterable:
+                        retry_item_ = futures[future]
+                        del futures[future]
+                        try:
+                            yield future.result()
+                        
