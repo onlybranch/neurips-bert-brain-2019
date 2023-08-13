@@ -427,4 +427,28 @@ class CudaPoolExecutor(object):
                         del futures[future]
                         try:
                             yield future.result()
-                        
+                            retry_item_ = None
+                        except BaseException as ex:
+                            if retry_item_ is None or not retry_item_.should_retry_fn(ex):
+                                raise
+                            next_fs[self._process_pool_executor.submit(retry_item_.fn, *retry_item_.args)] = retry_item_
+                    futures = next_fs
+            finally:
+                for future in futures:
+                    future.cancel()
+                for future in next_fs:
+                    future.cancel()
+
+        return result_iterator(fs)
+
+    def map(self, func, *iterables, timeout=None, chunksize=1, num_cuda_memory_retries=0):
+
+        if chunksize < 1:
+            raise ValueError("chunksize must be >= 1.")
+
+        results = self._map(
+            partial(_process_chunk, func),
+            _get_chunks(*iterables, chunksize=chunksize),
+            timeout=timeout,
+            num_cuda_memory_retries=num_cuda_memory_retries)
+        
