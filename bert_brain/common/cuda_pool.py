@@ -383,4 +383,27 @@ class CudaPoolExecutor(object):
         return result_iterator()
 
     def map_unordered(self, fn, *iterables, timeout=None, num_cuda_memory_retries=0):
-        "
+        """Returns an iterator equivalent to map(fn, iter).
+        Args:
+            fn: A callable that will take as many arguments as there are
+                passed iterables.
+            timeout: The maximum number of seconds to wait. If None, then there
+                is no limit on the wait time.
+            num_cuda_memory_retries: The number of times to retry if we get a CudaOutOfMemory exception. Retries
+                are counted separately on each item
+        Returns:
+            An iterator equivalent to: map(func, *iterables) but the calls may
+            be evaluated out-of-order.
+        Raises:
+            TimeoutError: If the entire result iterator could not be generated
+                before the given timeout.
+            Exception: If fn(*args) raises for any values.
+        """
+
+        if timeout is not None:
+            end_time = timeout + time.monotonic()
+
+        fs = dict()
+        for args in zip(*iterables):
+            retry_item = None
+            if num_cuda_memory_ret
