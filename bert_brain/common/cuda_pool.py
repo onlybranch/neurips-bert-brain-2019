@@ -451,4 +451,30 @@ class CudaPoolExecutor(object):
             _get_chunks(*iterables, chunksize=chunksize),
             timeout=timeout,
             num_cuda_memory_retries=num_cuda_memory_retries)
-        
+        return _chain_from_iterable_of_lists(results)
+
+    def submit(self, fn, *args, **kwargs):
+        return self._process_pool_executor.submit(fn, *args, **kwargs)
+
+    def shutdown(self, wait=True):
+        self._no_available_queue.put(2)
+        self._process_pool_executor.shutdown(wait)
+
+
+@contextmanager
+def cuda_pool_executor(min_memory, max_workers=None, mp_context=None, initializer=None, initargs=()):
+    memory_info = cuda_memory_info()
+    if max_workers is None:
+        max_workers = len(memory_info)
+    if mp_context is None:
+        mp_context = get_context('spawn')
+
+    memory_info = [
+        (device_id, device_info.free) for device_id, device_info in enumerate(memory_info)]
+
+    memory_info = sorted(memory_info, key=lambda id_free_total: (-id_free_total[1], id_free_total[0]))
+
+    device_ids = list()
+    for i in range(max_workers):
+        use, current = divmod(i, len(memory_info))
+        free = memory_info[cu
