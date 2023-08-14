@@ -506,3 +506,37 @@ def cuda_pool_executor(min_memory, max_workers=None, mp_context=None, initialize
 
 def _local_thread_cuda_memory_info():
     import numba.cuda
+    try:
+        result = list()
+        for i in range(len(numba.cuda.gpus)):
+            try:
+                numba.cuda.select_device(i)
+                context = numba.cuda.current_context()
+                free, total = context.get_memory_info()
+            except numba.cuda.cudadrv.driver.CudaAPIError:
+                # assume this is an out of memory error
+                free = 0
+                total = float('nan')
+            result.append(DeviceMemoryInfo(free, total))
+            numba.cuda.close()
+        return result
+    finally:
+        numba.cuda.close()
+
+
+def _cuda_memory_info(q):
+    # execute this in a separate process so numba.cuda.close() does not mess up any current device usage
+    q.put(_local_thread_cuda_memory_info())
+
+
+class DeviceMemoryInfo(object):
+
+    def __init__(self, free, total):
+        self.free, self.total = free, total
+
+    def __str__(self):
+        return '{}(free={}, total={})'.format(type(self), self.free, self.total)
+
+
+def cuda_memory_info():
+    ctx = get_contex
