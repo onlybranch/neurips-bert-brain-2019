@@ -477,4 +477,32 @@ def cuda_pool_executor(min_memory, max_workers=None, mp_context=None, initialize
     device_ids = list()
     for i in range(max_workers):
         use, current = divmod(i, len(memory_info))
-        free = memory_info[cu
+        free = memory_info[current][1] - use * min_memory
+        if free >= min_memory:
+            device_ids.append(memory_info[current][0])
+        elif current == 0:
+            break  # the most free one is all used up, so the others must be too
+
+    if len(device_ids) == 0:
+        raise ValueError('No devices with enough memory available')
+
+    device_queue = mp_context.Queue()
+    no_available_queue = mp_context.Queue()
+    for device_id in device_ids:
+        device_queue.put(device_id)
+
+    device_monitor = Thread(target=_monitor_devices, args=(
+        max_workers, min_memory, device_ids, device_queue, no_available_queue), daemon=True)
+    device_monitor.start()
+
+    yield ProcessPoolExecutor(
+        max_workers=max_workers,
+        mp_context=mp_context,
+        initializer=_set_device_id_and_initialize,
+        initargs=(device_queue, no_available_queue, initializer, initargs))
+
+    no_available_queue.put(2)
+
+
+def _local_thread_cuda_memory_info():
+    import numba.cuda
