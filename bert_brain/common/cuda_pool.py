@@ -539,4 +539,19 @@ class DeviceMemoryInfo(object):
 
 
 def cuda_memory_info():
-    ctx = get_contex
+    ctx = get_context('spawn')
+    q = ctx.Queue()
+    p = ctx.Process(target=_cuda_memory_info, args=(q,))
+    p.start()
+    result = q.get()
+    return result
+
+
+def cuda_most_free_device():
+    device_id = None
+    free = None
+    for i, memory_info in enumerate(cuda_memory_info()):
+        if free is None or memory_info.free > free:
+            free = memory_info.free
+            device_id = i
+    return device_id, free
