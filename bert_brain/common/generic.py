@@ -86,4 +86,43 @@ class SwitchRemember:
     def __init__(self, var):
         """
         Wraps a value which will be tested for equality so that all values it is compared with are stored.
-        Useful for writing a 'switch' statement and raising a de
+        Useful for writing a 'switch' statement and raising a descriptive ValueError when no values are matched which
+        contains all of the possible legitimate values. E.g.:
+
+        user_input = SwitchRemember(user_input)
+
+        if user_input == 'item1':
+            # do something
+            ...
+        elif user_input == 'item2':
+            # do something else
+            ...
+        elif user_input == 'item3':
+            # do a third thing
+            ...
+        else:
+            raise ValueError('Unrecognized value for user_input. Valid values are: {}'.format(user_input.tests)
+
+        Args:
+            var: The underlying value to test for equality
+        """
+        self.var = var
+        self._tests = set()
+
+    @property
+    def tests(self):
+        return list(sorted(self._tests))
+
+    def __eq__(self, test):
+        self._tests.add(test)
+        return self.var == test
+
+
+def camel_to_snake(s):
+    """
+    Converts from CamelCase to snake_case
+    Args:
+        s: string to convert
+
+    Returns:
+        converted string
