@@ -64,4 +64,26 @@ def copy_from_properties(instance, **kwargs):
 def get_keyword_properties(instance, just_names=False):
     """
     Related to copy_from_properties, this method gets key-value pairs from an instance and returns them as a list.
-    The key-value pairs are re
+    The key-value pairs are returned in the order the keys are specified in the init method for all keys which are
+    in the init method and which are also properties of the instance.
+    Args:
+        instance: The object from which to get key-value pairs
+        just_names: If True, then the resulting list contains only the keys and not the values.
+    Returns:
+        key_value_pairs: A list of 2-tuples containing the keys and values as described.
+    """
+    property_names = [n for n, v in inspect.getmembers(type(instance), lambda m: isinstance(m, property))]
+    init_kwargs = inspect.getfullargspec(type(instance).__init__).args
+
+    if just_names:
+        return [k for k in init_kwargs if k in property_names]
+
+    return [(k, getattr(instance, k)) for k in init_kwargs if k in property_names]
+
+
+class SwitchRemember:
+
+    def __init__(self, var):
+        """
+        Wraps a value which will be tested for equality so that all values it is compared with are stored.
+        Useful for writing a 'switch' statement and raising a de
