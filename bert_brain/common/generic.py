@@ -40,4 +40,28 @@ def copy_from_properties(instance, **kwargs):
     kwargs. Thus for a class Foo with properties [a, b, c], copy_from_properties(instance, a=7) is equivalent to
     Foo(a=7, b=instance.b, c=instance.c)
     Notes:
-        Now that Python includes dataclasses, using datac
+        Now that Python includes dataclasses, using dataclasses is generally preferred to this method.
+    Args:
+        instance: The instance to use as a template
+        **kwargs: The keyword arguments to __init__ that should not come from the current instance's properties
+
+    Returns:
+        A copy of instance modified according to kwargs
+    """
+    property_names = [n for n, v in inspect.getmembers(type(instance), lambda m: isinstance(m, property))]
+    init_kwargs = inspect.getfullargspec(type(instance).__init__).args
+
+    def __iterate_key_values():
+        for k in init_kwargs[1:]:
+            if k in kwargs:
+                yield k, kwargs[k]
+            elif k in property_names:
+                yield k, getattr(instance, k)
+
+    return type(instance)(**dict(__iterate_key_values()))
+
+
+def get_keyword_properties(instance, just_names=False):
+    """
+    Related to copy_from_properties, this method gets key-value pairs from an instance and returns them as a list.
+    The key-value pairs are re
