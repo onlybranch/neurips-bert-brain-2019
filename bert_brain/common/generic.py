@@ -126,3 +126,31 @@ def camel_to_snake(s):
 
     Returns:
         converted string
+    """
+    # https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def split_with_indices(s):
+    """
+    Splits on whitespace and returns the indices of each token along with the tokens
+    Args:
+        s: string to split
+
+    Returns:
+        A list of (index, token) pairs
+    """
+    return [(match.start(), match.group()) for match in re.finditer(r'\S+', s)]
+
+
+class MultiReplace:
+    def __init__(self, replace_dict):
+        """
+        Utility class which is similar to string.replace, but which matches multiple items simultaneously. Useful
+        for cleaning text
+        Args:
+            replace_dict: A map from patterns to their replacements
+        """
+        self._replace_dict = dict(replace_dict)
+        self._regex = re.co
