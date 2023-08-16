@@ -153,4 +153,10 @@ class MultiReplace:
             replace_dict: A map from patterns to their replacements
         """
         self._replace_dict = dict(replace_dict)
-        self._regex = re.co
+        self._regex = re.compile('|'.join(re.escape(k) for k in self._replace_dict))
+
+    def _get_replacement(self, match):
+        return self._replace_dict[match.group(0)]
+
+    def replace(self, text):
+        return self._regex.sub(self._get_replacement, text)
