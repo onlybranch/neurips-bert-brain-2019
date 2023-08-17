@@ -22,4 +22,38 @@ from dataclasses import dataclass
 from typing import Union
 
 __all__ = [
-    'corpus_base', 'corpus_loader', 'data_preparer', 'dataset', '
+    'corpus_base', 'corpus_loader', 'data_preparer', 'dataset', 'fmri_example_builders',
+    'harry_potter', 'input_features', 'preprocessors']
+__all__.extend(corpus_base.__all__)
+__all__.extend(corpus_loader.__all__)
+__all__.extend(data_preparer.__all__)
+__all__.extend(dataset.__all__)
+__all__.extend(fmri_example_builders.__all__)
+__all__.extend(harry_potter.__all__)
+__all__.extend(input_features.__all__)
+__all__.extend(preprocessors.__all__)
+__all__.extend(spacy_token_meta.__all__)
+
+
+@dataclass(frozen=True)
+class _CorpusConstants:
+    HarryPotterCorpus: Union[type, str] = HarryPotterCorpus
+
+
+def _corpus_subclasses_recursive():
+    def sub(c, result):
+        result.append(c)
+        for sc in c.__subclasses__():
+            sub(sc, result)
+    corpus_types = list()
+    for cb in CorpusBase.__subclasses__():
+        sub(cb, corpus_types)
+    return corpus_types
+
+
+CorpusTypes = _CorpusConstants()
+CorpusKeys = _CorpusConstants(**dict((t.__name__, t.__name__) for t in _corpus_subclasses_recursive()))
+
+
+__all__.append('CorpusTypes')
+__all__.append('CorpusKeys')
