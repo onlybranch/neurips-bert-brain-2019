@@ -32,4 +32,22 @@ class CorpusExampleUnifier:
             self,
             example_key: Optional[Hashable],
             words: Sequence[str],
-           
+            sentence_ids: Sequence[int],
+            data_key: Optional[Union[str, Sequence[str]]],
+            data_ids: Optional[Sequence[int]],
+            start: int = 0,
+            stop: Optional[int] = None,
+            start_sequence_2: Optional[int] = None,
+            stop_sequence_2: Optional[int] = None,
+            start_sequence_3: Optional[int] = None,
+            stop_sequence_3: Optional[int] = None,
+            is_apply_data_id_to_entire_group: bool = False,
+            multipart_id: Optional[int] = None,
+            span_ids: Optional[Sequence[int]] = None,
+            allow_new_examples: bool = True) -> Optional[InputFeatures]:
+        """
+        Adds an example for the current data loader to return later. Simplifies the process of merging examples
+        across different response measures. For example MEG and fMRI
+        Args:
+            example_key: For instance, the position of the example within a story. If this is set to None, then the
+                tokens will be used as the example_key. However, this may be unde
