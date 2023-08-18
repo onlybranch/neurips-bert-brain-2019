@@ -50,4 +50,15 @@ class CorpusExampleUnifier:
         across different response measures. For example MEG and fMRI
         Args:
             example_key: For instance, the position of the example within a story. If this is set to None, then the
-                tokens will be used as the example_key. However, this may be unde
+                tokens will be used as the example_key. However, this may be undesirable since in a given passage,
+                sentences, especially short sentences, can be repeated.
+            words: The words in the example
+            sentence_ids: For each word, identifies which sentence the word belongs to. Used to compute
+                index_of_word_in_sentence in the resulting InputFeatures
+            data_key: A key (or multiple keys) to designate which response data set(s) data_ids references
+            data_ids: indices into the response data, one for each token
+            start: Offset where the actual input features should start. It is best to compute spacy meta on full
+                sentences, then slice the resulting tokens. start and stop are used to slice words, sentence_ids,
+                data_ids and type_ids
+            stop: Exclusive end point for the actual input features. If None, the full length is used
+            is_apply_data_id_to_entire_group: If a word i
