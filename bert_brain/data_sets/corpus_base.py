@@ -61,4 +61,13 @@ class CorpusExampleUnifier:
                 sentences, then slice the resulting tokens. start and stop are used to slice words, sentence_ids,
                 data_ids and type_ids
             stop: Exclusive end point for the actual input features. If None, the full length is used
-            is_apply_data_id_to_entire_group: If a word i
+            is_apply_data_id_to_entire_group: If a word is broken into multiple tokens, generally a single token is
+                heuristically chosen as the 'main' token corresponding to that word. The data_id it is assigned is given
+                by data offset, while all the tokens that are not the main token in the group are assigned -1. If this
+                parameter is set to True, then all of the multiple tokens corresponding to a word are assigned the same
+                data_id, and none are set to -1. This can be a better option for fMRI where the predictions are not at
+                the word level, but rather at the level of an image containing multiple words.
+            start_sequence_2: Used for bert to combine multiple sequences as a single input. Generally this is used for
+                tasks like question answering where type_id=0 is the question and type_id=1 is the answer.
+                If not specified, type_id=0 is used for every token
+            stop_sequence_2: Used for bert to combine multiple 
