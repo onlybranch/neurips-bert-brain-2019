@@ -70,4 +70,15 @@ class CorpusExampleUnifier:
             start_sequence_2: Used for bert to combine multiple sequences as a single input. Generally this is used for
                 tasks like question answering where type_id=0 is the question and type_id=1 is the answer.
                 If not specified, type_id=0 is used for every token
-            stop_sequence_2: Used for bert to combine multiple 
+            stop_sequence_2: Used for bert to combine multiple sequences as a single input. Generally this is used for
+                tasks like question answering where type_id=0 is the question and type_id=1 is the answer.
+            start_sequence_3: Used for bert to combine 3 sequences as a single input. Generally this is used for tasks
+                like question answering with a context. type_id=0 is the context and type_id=1 is the question and
+                answer
+            stop_sequence_3: Used for bert to combine 3 sequences as a single input. Generally this is used for tasks
+                like question answering with a context. type_id=0 is the context and type_id=1 is the question and
+                answer
+            multipart_id: Used to express that this example needs to be in the same batch as other examples sharing the
+                same multipart_id to be evaluated
+            span_ids: Bit-encoded span identifiers which indicate which spans each word belongs to when spans are
+               
