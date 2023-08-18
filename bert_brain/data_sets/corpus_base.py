@@ -81,4 +81,22 @@ class CorpusExampleUnifier:
             multipart_id: Used to express that this example needs to be in the same batch as other examples sharing the
                 same multipart_id to be evaluated
             span_ids: Bit-encoded span identifiers which indicate which spans each word belongs to when spans are
-               
+                labeled in the input. If not given, no span ids will be set on the returned InputFeatures instance.
+            allow_new_examples: If False, then if the example does not already exist in this instance, it will not
+                be added. Only new data_ids will be added to existing examples. Returns None when the example does
+                not exist.
+        Returns:
+            The InputFeatures instance associated with the example
+        """
+        input_features = bert_tokenize_with_spacy_meta(
+            self.spacy_tokenize_model, self.bert_tokenizer,
+            len(self._examples), words, sentence_ids, data_key, data_ids,
+            start, stop,
+            start_sequence_2, stop_sequence_2,
+            start_sequence_3, stop_sequence_3,
+            multipart_id,
+            span_ids,
+            is_apply_data_id_to_entire_group)
+
+        if example_key is None:
+            example_key = tuple(input_features.token_ids)
