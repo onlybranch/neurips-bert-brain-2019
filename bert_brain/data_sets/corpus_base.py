@@ -153,4 +153,28 @@ class CorpusExampleUnifier:
 class CorpusBase:
 
     @classmethod
-    def _path_a
+    def _path_attributes(cls) -> Optional[Mapping[str, str]]:
+        """
+        A corpus declares a mapping from the paths object to its own path attributes
+        by defining this function. E.g.:
+            def _path_attributes(cls):
+                return dict(path='harry_potter_path')
+        """
+        raise NotImplementedError('{} does not implement _path_attributes'.format(cls))
+
+    @classmethod
+    def _hash_arguments(cls, kwargs):
+        hash_ = hashlib.sha256()
+        for key in kwargs:
+            s = '{}={}'.format(key, kwargs[key])
+            hash_.update(s.encode())
+        return hash_.hexdigest()
+
+    def __new__(cls, *args, **kwargs):
+        obj = object.__new__(cls)
+        sig = signature(cls.__init__)
+        bound_arguments = sig.bind_partial(*args, **kwargs)
+        bound_arguments.apply_defaults()
+        obj._bound_arguments = bound_arguments.arguments
+        obj._argument_hash = cls._hash_arguments(obj._bound_arguments)
+        obj._cache_base_pat
