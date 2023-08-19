@@ -100,3 +100,28 @@ class CorpusExampleUnifier:
 
         if example_key is None:
             example_key = tuple(input_features.token_ids)
+
+        if example_key not in self._examples:
+            if allow_new_examples:
+                self._examples[example_key] = input_features
+            else:
+                return None
+        else:
+            current = dataclasses.asdict(input_features)
+            have = dataclasses.asdict(self._examples[example_key])
+            assert(len(have) == len(current))
+            for k in have:
+                assert(k in current)
+                if k == 'unique_id' or k == 'data_ids':
+                    continue
+                else:
+                    # handles NaN, whereas np.array_equal does not
+                    np.testing.assert_array_equal(have[k], current[k])
+            if data_key is not None:
+                if isinstance(data_key, str):
+                    data_key = [data_key]
+                for k in data_key:
+                    self._seen_data_keys[k] = True
+                    self._examples[example_key].data_ids[k] = input_features.data_ids[k]
+
+        retur
