@@ -124,4 +124,33 @@ class CorpusExampleUnifier:
                     self._seen_data_keys[k] = True
                     self._examples[example_key].data_ids[k] = input_features.data_ids[k]
 
-        retur
+        return self._examples[example_key]
+
+    def iterate_examples(self, fill_data_keys=False):
+        for k in self._examples:
+            if fill_data_keys:
+                for data_key in self._seen_data_keys:
+                    if data_key not in self._examples[k].data_ids:
+                        self._examples[k].data_ids[data_key] = -1 * np.ones(
+                            len(self._examples[k].token_ids), dtype=np.int64)
+            yield self._examples[k]
+
+    def remove_data_keys(self, data_keys):
+        if isinstance(data_keys, str):
+            data_keys = [data_keys]
+        for ex in self.iterate_examples():
+            for data_key in data_keys:
+                if data_key in ex.data_ids:
+                    del ex.data_ids[data_key]
+        for data_key in data_keys:
+            if data_key in self._seen_data_keys:
+                del self._seen_data_keys[data_key]
+
+    def __len__(self):
+        return len(self._examples)
+
+
+class CorpusBase:
+
+    @classmethod
+    def _path_a
