@@ -238,4 +238,24 @@ class CorpusBase:
             'token_lengths': FieldSpec(tensor_dtype=torch.long),
             'token_probabilities': FieldSpec(fill_value=-20.),
             'head_location': FieldSpec(fill_value=np.nan),
-            'head_tokens': F
+            'head_tokens': FieldSpec(fill_value='[PAD]', tensor_dtype=str),
+            'head_token_ids': FieldSpec(tensor_dtype=torch.long),
+            'type_ids': FieldSpec(tensor_dtype=torch.long),
+            'data_ids': FieldSpec(fill_value=-1, tensor_dtype=torch.long),
+            'span_ids': FieldSpec(fill_value=0, tensor_dtype=torch.long),
+            'index_word_in_example': FieldSpec(fill_value=-1, tensor_dtype=torch.long),
+            'index_token_in_sentence': FieldSpec(fill_value=0, tensor_dtype=torch.long),
+            'multipart_id': FieldSpec(tensor_dtype=torch.long, is_sequence=False)
+        }
+
+        if raw_data.field_specs is None:
+            raw_data.field_specs = {}
+        for field in all_fields:
+            if field not in raw_data.field_specs and field in default_field_specs:
+                raw_data.field_specs[field] = default_field_specs[field]
+
+    def load(
+            self,
+            index_run,
+            spacy_tokenizer_model: SpacyLanguage,
+            bert_tokeni
