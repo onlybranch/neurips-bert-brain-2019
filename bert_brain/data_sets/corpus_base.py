@@ -177,4 +177,25 @@ class CorpusBase:
         bound_arguments.apply_defaults()
         obj._bound_arguments = bound_arguments.arguments
         obj._argument_hash = cls._hash_arguments(obj._bound_arguments)
-        obj._cache_base_pat
+        obj._cache_base_path = None
+        return obj
+
+    @property
+    def argument_hash(self):
+        return self._argument_hash
+
+    def set_paths_from_path_object(self, path_obj):
+        #   A corpus declares a mapping from the paths object to its own path attributes
+        #   by defining this function. E.g.:
+        #       def _path_attributes(cls):
+        #           return dict(path='harry_potter_path')
+        path_attribute_mapping = type(self)._path_attributes()
+        for path_attribute in path_attribute_mapping:
+            current_value = getattr(self, path_attribute)
+            if current_value is None:
+                if not hasattr(path_obj, path_attribute_mapping[path_attribute]):
+                    raise ValueError(
+                        'Paths instance has no attribute {}'.format(path_attribute_mapping[path_attribute]))
+                paths_value = getattr(path_obj, path_attribute_mapping[path_attribute])
+                setattr(self, path_attribute, paths_value)
+        # spec
