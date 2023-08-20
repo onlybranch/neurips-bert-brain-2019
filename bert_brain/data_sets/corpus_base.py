@@ -258,4 +258,29 @@ class CorpusBase:
             self,
             index_run,
             spacy_tokenizer_model: SpacyLanguage,
-            bert_tokeni
+            bert_tokenizer: BertTokenizer,
+            paths_obj=None,
+            force_cache_miss=False):
+
+        run_info = self._run_info(index_run)
+
+        if paths_obj is not None:
+            self.set_paths_from_path_object(paths_obj)
+        else:
+            self.check_paths()
+
+        result = load_from_cache(self.cache_path(run_info), run_info, self._bound_arguments, force_cache_miss)
+        if result is not None:
+            return result
+
+        example_manager = CorpusExampleUnifier(spacy_tokenizer_model, bert_tokenizer)
+        result = self._load(run_info, example_manager)
+        CorpusBase._populate_default_field_specs(result)
+        save_to_cache(self.cache_path(run_info), result, run_info, self._bound_arguments)
+        return result
+
+    def _run_info(self, index_run):
+        return -1
+
+    def _load(self, run_load_info, example_manager: CorpusExampleUnifier):
+        raise NotImplementedError('{} does not implement _load'.format(type(self)))
