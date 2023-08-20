@@ -154,3 +154,90 @@ class DataPreparer(object):
         for k in result:
             phases = None
             phase_change_steps = dict()
+            phase_steps = OrderedDict()
+
+            if self._preprocess_fork_fn is not None:
+                current_response_keys = list(result[k].data)
+                for response_k in current_response_keys:
+                    preprocessor = _get_preprocessor(
+                        self._preprocess_dict, k, response_k, result[k].data[response_k].kind)
+                    forked_name, forked_preprocessor = self._preprocess_fork_fn(
+                        response_k, result[k].data[response_k].kind, preprocessor)
+                    if forked_name is not None:
+                        if forked_name in result[k].data:
+                            raise ValueError('Duplicate name: {}'.format(forked_name))
+                        result[k].data[forked_name] = KindData(
+                            result[k].data[response_k].kind, np.copy(result[k].data[response_k].data))
+                    if forked_preprocessor is not None:
+                        self._preprocess_dict[forked_name] = forked_preprocessor
+                    for ex in chain(result[k].train, result[k].validation, result[k].test):
+                        ex.data_ids[forked_name] = np.copy(ex.data_ids[response_k])
+
+            for response_k in result[k].data:
+                response_phases = None
+                phase_steps[response_k] = None
+                preprocessor = _get_preprocessor(
+                    self._preprocess_dict, k, response_k, result[k].data[response_k].kind)
+                if preprocessor is not None:
+                    phase_steps[response_k] = [list()]
+                    # noinspection PyTypeChecker
+                    if callable(preprocessor) \
+                            or (not isinstance(preprocessor, str)
+                                and len(preprocessor) == 2
+                                and isinstance(preprocessor[0], str)):
+                        preprocessor = [preprocessor]
+                    for step in preprocessor:
+                        name = None
+                        if isinstance(step, str):
+                            name = step
+                            step = None
+                        elif isinstance(step, tuple):
+                            name, step = step
+                        if name is not None:
+                            if response_phases is None:
+                                response_phases = [name]
+                            else:
+                                response_phases.append(name)
+                            if step is not None:
+                                if name in phase_change_steps:
+                                    if id(phase_change_steps[name]) != id(step):
+                                        raise ValueError('Phase change steps must be specified exactly once')
+                                else:
+                                    phase_change_steps[name] = step
+                            phase_steps[response_k].append(list())
+                        else:
+                            phase_steps[response_k][-1].append(step)
+                    if phases is None:
+                        phases = response_phases
+                    else:
+                        if len(phases) != len(response_phases):
+                            raise ValueError(
+                                'Unequal phases across response types: {}, {}'.format(phases, response_phases))
+                        for p, r in zip(phases, response_phases):
+                            if p != r:
+                                raise ValueError(
+                                    'Unequal phases across response types: {}, {}'.format(phases, response_phases))
+
+            if phases is None:
+                phases = []
+
+            for phase in phases:
+                if phase_change_steps[phase] is None:
+                    raise ValueError('Phase change step is not specified: {}'.format(phase))
+
+            for index_phase in range(len(phases) + 1):
+                current_response_keys = list(result[k].data)
+                for response_k in current_response_keys:
+                    for step in phase_steps[response_k][index_phase]:
+                        if hasattr(step, 'set_model_path'):
+                            step.set_model_path(self._output_model_path, response_k)
+                        processed = step(
+                            _make_prepared_data_view(result[k], response_k), metadata[k], self._random_state[k])
+                        _reconcile_view(result[k], processed, response_k)
+                if index_phase < len(phases):
+                    phase_change_step = phase_change_steps[phases[index_phase]]
+                    if hasattr(phase_change_step, 'set_model_path'):
+                        phase_change_step.set_model_path(self._output_model_path)
+                    result[k], metadata[k] = phase_change_step(result[k], metadata[k], self._random_state[k])
+
+        return result
