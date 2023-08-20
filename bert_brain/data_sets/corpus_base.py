@@ -217,4 +217,25 @@ class CorpusBase:
 
     @staticmethod
     def _populate_default_field_specs(raw_data):
-        x, y, z = raw_data.input_examples, 
+        x, y, z = raw_data.input_examples, raw_data.validation_input_examples, raw_data.test_input_examples
+        if x is None:
+            x = []
+        if y is None:
+            y = []
+        if z is None:
+            z = []
+        all_fields = set()
+        for ex in itertools.chain(x, y, z):
+            all_fields.update([field.name for field in dataclasses.fields(ex)])
+
+        default_field_specs = {
+            'unique_id': FieldSpec(tensor_dtype=torch.long, is_sequence=False),
+            'tokens': FieldSpec(fill_value='[PAD]', tensor_dtype=str),
+            'token_ids': FieldSpec(tensor_dtype=torch.long),
+            'mask': FieldSpec(tensor_dtype=torch.uint8),
+            'is_stop': FieldSpec(fill_value=1, tensor_dtype=torch.uint8),
+            'is_begin_word_pieces': FieldSpec(tensor_dtype=torch.uint8),
+            'token_lengths': FieldSpec(tensor_dtype=torch.long),
+            'token_probabilities': FieldSpec(fill_value=-20.),
+            'head_location': FieldSpec(fill_value=np.nan),
+            'head_tokens': F
