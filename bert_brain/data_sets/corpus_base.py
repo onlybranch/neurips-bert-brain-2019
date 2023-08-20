@@ -198,4 +198,23 @@ class CorpusBase:
                         'Paths instance has no attribute {}'.format(path_attribute_mapping[path_attribute]))
                 paths_value = getattr(path_obj, path_attribute_mapping[path_attribute])
                 setattr(self, path_attribute, paths_value)
-        # spec
+        # special case for cache_path
+        if self._cache_base_path is None:
+            # noinspection PyAttributeOutsideInit
+            self._cache_base_path = os.path.join(path_obj.cache_path, type(self).__name__)
+
+    def cache_path(self, run_info):
+        arg_hash = type(self)._hash_arguments({'argument_hash': self._argument_hash, 'run_info': run_info})
+        return os.path.join(self._cache_base_path, '{}.npz'.format(arg_hash))
+
+    def check_paths(self):
+        path_attribute_mapping = type(self)._path_attributes()
+        for path_attribute in path_attribute_mapping:
+            current_value = getattr(self, path_attribute)
+            if current_value is None:
+                raise ValueError('{} is not populated. Either call load with a Paths instance or set the path manually '
+                                 'before calling load'.format(path_attribute))
+
+    @staticmethod
+    def _populate_default_field_specs(raw_data):
+        x, y, z = raw_data.input_examples, 
