@@ -164,4 +164,22 @@ class FMRICombinedSentenceExamples:
                     skipped_trs.add(index_tr)
                     continue
 
-            # get the duration from the earliest wor
+            # get the duration from the earliest word in the window to the tr
+            # if this is not at least minimum_duration_required then skip the tr
+            if self.minimum_duration_required is not None:
+                if self.use_word_unit_durations:
+                    should_skip = np.sum(indicator_words) < int(np.ceil(self.minimum_duration_required))
+                else:
+                    min_word_time = np.min(word_times[indicator_words])
+                    should_skip = tr_time - min_word_time < self.minimum_duration_required
+                if should_skip:
+                    skipped_trs.add(index_tr)
+                    continue
+
+            # assign the tr as a target for the last word in the window
+            max_word_id = np.max(word_ids[indicator_words])
+            if max_word_id not in word_id_to_trs:
+                word_id_to_trs[max_word_id] = list()
+            word_id_to_trs[max_word_id].append(index_tr)
+
+            # build th
