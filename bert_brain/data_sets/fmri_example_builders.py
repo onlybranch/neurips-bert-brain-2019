@@ -74,4 +74,21 @@ class FMRICombinedSentenceExamples:
             sentence_mode: One of ['multiple', 'single', 'ignore']. When 'multiple', an example consists of the
                 combination of sentences as described above. If 'single', changes the behavior of the function so that
                 the feature window is truncated by the start of a sentence, thus resulting in examples with one
-                sentence at a time. If 'ignore', then each exa
+                sentence at a time. If 'ignore', then each example consists of exactly the words in the feature window
+                without consideration of the sentence boundaries
+        """
+        self.window_duration = window_duration
+        self.minimum_duration_required = minimum_duration_required
+        self.use_word_unit_durations = use_word_unit_durations
+        self.sentence_mode = sentence_mode
+
+    def __call__(self, words, word_times, word_sentence_ids, tr_times, tr_offset=0):
+        """
+        For each TR, finds the minimal combination of sentences that will give window_size_features seconds of data
+        for the TR. For example, if the word timings are
+
+        [('The', 0.5), ('dog', 1.0), ('chased', 1.5), ('the', 2.0), ('cat', 2.5), ('up', 3.0), ('the', 3.5),
+         ('tree.', 4.0), ('The', 4.5), ('cat', 5.0), ('was', 5.5), ('scared', 6.0)]
+
+        and if the window_size_features is 2.0, then for the TR at ('cat', 2.5), the combination of sentences
+       
