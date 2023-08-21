@@ -120,4 +120,28 @@ class FMRICombinedSentenceExamples:
         if not np.all(np.diff(word_times) >= 0):
             raise ValueError('word_times must be monotonically increasing')
         word_sentence_ids = np.asarray(word_sentence_ids)
-   
+        if not np.all(np.diff(word_sentence_ids) >= 0):
+            raise ValueError('sentence ids must be monotonically increasing')
+        if len(word_times) != len(words):
+            raise ValueError('expected one time per word')
+        if len(word_sentence_ids) != len(words):
+            raise ValueError('expected one sentence is per word')
+
+        tr_word_indices = None
+        indicator_words = None
+        if self.use_word_unit_durations:
+            tr_word_indices = np.searchsorted(word_times, tr_times, 'right') - 1
+            indicator_words = np.full(len(words), False)
+
+        word_ids = np.arange(len(words))
+
+        tr_to_sentences = dict()
+        word_id_to_trs = dict()
+        skipped_trs = set()
+        sentence_to_trs = dict()
+
+        for index_tr, tr_time in enumerate(tr_times):
+
+            if self.use_word_unit_durations:
+                indicator_words[:] = False
+                indicator_w
