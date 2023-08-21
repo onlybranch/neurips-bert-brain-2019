@@ -182,4 +182,23 @@ class FMRICombinedSentenceExamples:
                 word_id_to_trs[max_word_id] = list()
             word_id_to_trs[max_word_id].append(index_tr)
 
-            # build th
+            # build the bipartite graph for deduplication
+            if self.sentence_mode == 'ignore':
+                example_words = tuple(np.where(indicator_words)[0])
+                tr_to_sentences[index_tr] = example_words
+                if example_words not in sentence_to_trs:
+                    sentence_to_trs[example_words] = list()
+                sentence_to_trs[example_words].append(index_tr)
+            else:
+                tr_to_sentences[index_tr] = sentence_ids
+                for sentence_id in sentence_ids:
+                    if sentence_id not in sentence_to_trs:
+                        sentence_to_trs[sentence_id] = list()
+                    sentence_to_trs[sentence_id].append(index_tr)
+
+        result = list()
+        output_trs = set()
+        for tr in tr_to_sentences:
+            if self.sentence_mode == 'ignore':
+                example_words = tr_to_sentences[tr]
+                trs = set(sentence_to_trs[example_words])
