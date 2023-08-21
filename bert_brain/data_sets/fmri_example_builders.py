@@ -43,4 +43,14 @@ class FMRICombinedSentenceExamples:
         For the TR at ('cat', 5.0), the combination is: (0, 1)
 
         Once these combinations have been computed, some of them will be subsets of others. The function removes
-        any combinations which are 
+        any combinations which are subsets of other combinations.
+
+        The output is a sequence of examples. Each example has three fields:
+            words: The sequence of 'words' associated with this example that are selected from the words passed in.
+                Each word can be of any type, the function does not look at their values
+            sentence_ids: A sequence of sentence ids, one for each word
+            tr_target: A sequence of sequences of TR indices, one sequence for each word. If a word does not have
+                a tr_target associated with it, then None replaces the sequence of TR indices. Multiple tr_targets
+                can be associated with a single word depending on the timings and parameters of the function. A TR
+                becomes the target for the final word in the window selected according to that TR's time.
+            full_sentences: Gives the sequence of 'words' for the full sentences of which this exa
