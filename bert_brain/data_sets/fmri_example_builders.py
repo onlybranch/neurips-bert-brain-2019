@@ -53,4 +53,16 @@ class FMRICombinedSentenceExamples:
                 a tr_target associated with it, then None replaces the sequence of TR indices. Multiple tr_targets
                 can be associated with a single word depending on the timings and parameters of the function. A TR
                 becomes the target for the final word in the window selected according to that TR's time.
-            full_sentences: Gives the sequence of 'words' for the full sentences of which this exa
+            full_sentences: Gives the sequence of 'words' for the full sentences of which this example is a portion.
+                When sentence_mode == 'multiple' or sentence_mode == 'single', this is the same sequence as words.
+                When sentence_mode == 'ignore' the sequence may be different.
+            offset: The offset from the beginning of full_sentences to the beginning of words. When
+                sentence_mode == 'multiple' or sentence_mode == 'single', this is 0. When sentence_mode == 'ignore'
+                this may be non-zero
+
+        Args:
+            window_duration: The duration of the window of time preceding a TR from which to
+                choose the words that will be involved in predicting that TR. For example, if this is 8, then all words
+                which occurred with tr_time > word_time >= tr_time - 8 will be used to build the example for the TR.
+            minimum_duration_required: The minimum duration of the time between the earliest word used to
+                predict a TR and the occurrenc
