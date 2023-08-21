@@ -144,4 +144,24 @@ class FMRICombinedSentenceExamples:
 
             if self.use_word_unit_durations:
                 indicator_words[:] = False
-                indicator_w
+                indicator_words[
+                    tr_word_indices[index_tr] - (int(np.ceil(self.window_duration)) - 1):
+                    tr_word_indices[index_tr] + 1] = True
+            else:
+                indicator_words = np.logical_and(word_times >= tr_time - self.window_duration, word_times < tr_time)
+
+            # nothing is in the window for this tr
+            if not np.any(indicator_words):
+                skipped_trs.add(index_tr)
+                continue
+
+            sentence_ids = np.unique(word_sentence_ids[indicator_words])
+            if self.sentence_mode == 'single':
+                sentence_ids = sentence_ids[-1:]
+                indicator_sentence_id = word_sentence_ids == sentence_ids[0]
+                indicator_words = np.logical_and(indicator_sentence_id, indicator_words)
+                if not np.any(indicator_words):
+                    skipped_trs.add(index_tr)
+                    continue
+
+            # get the duration from the earliest wor
