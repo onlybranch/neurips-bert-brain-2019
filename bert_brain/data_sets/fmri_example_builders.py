@@ -65,4 +65,13 @@ class FMRICombinedSentenceExamples:
                 choose the words that will be involved in predicting that TR. For example, if this is 8, then all words
                 which occurred with tr_time > word_time >= tr_time - 8 will be used to build the example for the TR.
             minimum_duration_required: The minimum duration of the time between the earliest word used to
-                predict a TR and the occurrenc
+                predict a TR and the occurrence of the TR. This much time is required for the TR to be a legitimate
+                target. For example, if this is set to 7.5, then letting the time of the earliest word occurring in the
+                window_duration before the TR be min_word_time, if tr_time - min_word_time <
+                minimum_duration_required, the TR is not is not used to build any examples.
+            use_word_unit_durations: If True, then window_duration and minimum_duration_required are in number
+                of words rather than time_units. window_duration = 8. would select the 8 previous words.
+            sentence_mode: One of ['multiple', 'single', 'ignore']. When 'multiple', an example consists of the
+                combination of sentences as described above. If 'single', changes the behavior of the function so that
+                the feature window is truncated by the start of a sentence, thus resulting in examples with one
+                sentence at a time. If 'ignore', then each exa
