@@ -106,4 +106,18 @@ class FMRICombinedSentenceExamples:
             tr_offset: Added to the index of the target_trs. Useful when making multiple calls to this function on
                 subsets of the TRs
         Returns:
-            A sequence of examples. Each example has three 
+            A sequence of examples. Each example has three fields:
+            words: The sequence of 'words' associated with this example that are selected from the words passed in.
+                Each word can be of any type, the function does not look at their values
+            sentence_ids: A sequence of sentence ids, one for each word
+            tr_target: A sequence of sequences of TR indices, one sequence for each word. If a word does not have
+                a tr_target associated with it, then None replaces the sequence of TR indices. Multiple tr_targets
+                can be associated with a single word depending on the timings and parameters of the function. A TR
+                becomes the target for the final word in the window selected according to that TR's time.
+
+        """
+        word_times = np.asarray(word_times)
+        if not np.all(np.diff(word_times) >= 0):
+            raise ValueError('word_times must be monotonically increasing')
+        word_sentence_ids = np.asarray(word_sentence_ids)
+   
