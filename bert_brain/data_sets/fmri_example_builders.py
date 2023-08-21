@@ -91,4 +91,19 @@ class FMRICombinedSentenceExamples:
          ('tree.', 4.0), ('The', 4.5), ('cat', 5.0), ('was', 5.5), ('scared', 6.0)]
 
         and if the window_size_features is 2.0, then for the TR at ('cat', 2.5), the combination of sentences
-       
+        that gives 2.0 seconds of features is simply the first sentence: (0,)
+        For the TR at ('cat', 5.0), the combination is: (0, 1)
+
+        Once these combinations have been computed, some of them will be subsets of others. The function removes
+        any combinations which are subsets of other combinations.
+
+        Args:
+            words: A list of 'words'. Each word can be of any type. Sequences of these are returned in each example,
+                but they are otherwise unused by the function
+            word_times: The time for each word, in the same time units as tr_times.
+            word_sentence_ids: The sentence id for each word.
+            tr_times: The time for each TR, in the same time units as word_times
+            tr_offset: Added to the index of the target_trs. Useful when making multiple calls to this function on
+                subsets of the TRs
+        Returns:
+            A sequence of examples. Each example has three 
