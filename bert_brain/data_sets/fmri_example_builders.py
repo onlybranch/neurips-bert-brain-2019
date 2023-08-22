@@ -265,4 +265,20 @@ class FMRICombinedSentenceExamples:
                 indicator_sentence_ids = np.full(len(words), False)
                 for sentence_id in sentence_ids:
                     indicator_sentence_ids = np.logical_or(indicator_sentence_ids, word_sentence_ids == sentence_id)
-                indices_sentence_ids = np.where(indicato
+                indices_sentence_ids = np.where(indicator_sentence_ids)[0]
+                full_sentences = [words[i] for i in indices_sentence_ids]
+                offset = np.min(example_words) - np.min(indices_sentence_ids)
+            else:
+                full_sentences = words_to_return
+                offset = 0
+
+            result.append(FMRIExample(
+                words_to_return,
+                [word_sentence_ids[i] for i in example_words],
+                tr_targets,
+                full_sentences,
+                offset))
+
+        assert(all([t in output_trs or t in skipped_trs for t in range(len(tr_times))]))
+
+        return result
