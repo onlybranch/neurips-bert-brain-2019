@@ -224,4 +224,26 @@ class FMRICombinedSentenceExamples:
                             else:
                                 trs.add(tr2)
                         else:
-                          
+                            is_owner = False
+                    elif tr2_sentences.issubset(sentences):
+                        trs.add(tr2)
+                if not is_owner:
+                    continue
+                sentences = sorted(sentences)
+                example_words = list()
+                for sentence in sentences:
+                    example_words.extend(word_ids[word_sentence_ids == sentence])
+
+            tr_targets = list()
+            for w in example_words:
+                if w in word_id_to_trs:
+                    # add the trs which have been assigned to this word if, for the current example
+                    # the duration requirements have been met
+                    active_trs = [tr for tr in word_id_to_trs[w] if tr in trs]
+                    tr_targets.append(active_trs if len(active_trs) > 0 else None)
+                else:
+                    tr_targets.append(None)
+
+            current_trs = set()
+            for target in tr_targets:
+                if target is not
