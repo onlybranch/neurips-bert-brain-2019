@@ -202,3 +202,26 @@ class FMRICombinedSentenceExamples:
             if self.sentence_mode == 'ignore':
                 example_words = tr_to_sentences[tr]
                 trs = set(sentence_to_trs[example_words])
+            else:
+                sentences = tr_to_sentences[tr]
+                overlapping_trs = set(sentence_to_trs[sentences[0]])
+                for s in sentences[1:]:
+                    overlapping_trs.update(sentence_to_trs[s])
+                trs = set()
+                trs.add(tr)
+                sentences = set(sentences)
+                is_owner = True
+                for tr2 in overlapping_trs:
+                    if tr2 == tr:
+                        continue
+                    tr2_sentences = set(tr_to_sentences[tr2])
+                    if sentences.issubset(tr2_sentences):
+                        # same set, ownership goes to the first tr
+                        if len(sentences) == len(tr2_sentences):
+                            if tr2 < tr:
+                                is_owner = False
+                                break
+                            else:
+                                trs.add(tr2)
+                        else:
+                          
