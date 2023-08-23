@@ -67,4 +67,26 @@ def named_variations(name):
     if name == 'hp_fmri_meg_joint':
         fmri_subjects_ = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
         # fmri_subjects_ = ['H', 'I', 'K', 'L']
-        fmri_
+        fmri_tasks_ = tuple('hp_fmri_{}'.format(s) for s in fmri_subjects_)
+        training_variations = [
+            fmri_tasks_ + ('hp_meg',)]
+        # ('hp_meg',),
+        # fmri_tasks_]
+        settings = Settings(
+            corpora=(CorpusTypes.HarryPotterCorpus(
+                fmri_subjects=fmri_subjects_,
+                fmri_sentence_mode='ignore',
+                fmri_window_duration=10.1,
+                fmri_minimum_duration_required=9.6,
+                group_meg_sentences_like_fmri=True,
+                meg_kind='leila',
+                meg_subjects=None),),  # None means everyone
+            optimization_settings=OptimizationSettings(
+                num_train_epochs=60,
+                num_epochs_train_prediction_heads_only=10,
+                num_final_epochs_train_prediction_heads_only=0))
+        settings.preprocessors[ResponseKind.hp_meg] = [
+            PreprocessDetrend(
+                stop_mode='content', metadata_example_group_by='fmri_runs', train_on_all=True),
+            PreprocessStandardize(
+   
