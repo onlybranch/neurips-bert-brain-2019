@@ -79,4 +79,22 @@ class RawData:
 
 
 def split_data(to_split, test_proportion, validation_of_train_proportion, shuffle=True, random_state=None):
-    fro
+    from sklearn.model_selection import train_test_split
+
+    if test_proportion > 0:
+        idx_train, idx_test = train_test_split(
+            np.arange(len(to_split)), test_size=test_proportion, shuffle=shuffle, random_state=random_state)
+    else:
+        idx_train = np.arange(len(to_split))
+        idx_test = []
+
+    if validation_of_train_proportion > 0:
+        idx_train, idx_validation = train_test_split(
+            idx_train, test_size=validation_of_train_proportion, shuffle=shuffle, random_state=random_state)
+    else:
+        idx_validation = []
+
+    train = [to_split[i] for i in idx_train]
+    validation = [to_split[i] for i in idx_validation]
+    test = [to_split[i] for i in idx_test]
+    return train, validation, test
