@@ -44,4 +44,39 @@ class InputFeatures:
     head_token_ids: Sequence[int]
     index_word_in_example: Sequence[int]  # useful for grouping tokens together in the model
     index_token_in_sentence: Sequence[int]  # useful for positional embedding
-    data_ids: Union[Mapping[str, Seque
+    data_ids: Union[Mapping[str, Sequence[int]], Sequence[int]]
+    multipart_id: Optional[int] = None
+    span_ids: Optional[Sequence[int]] = None
+
+
+@dataclass
+class KindData:
+    kind: str
+    data: np.array
+
+
+@dataclass(frozen=True)
+class _ResponseKind:
+    hp_fmri: str
+    hp_meg: str
+    generic: str
+
+
+ResponseKind = _ResponseKind(**dict((f.name, f.name) for f in dataclasses.fields(_ResponseKind)))
+
+
+@dataclass
+class RawData:
+    input_examples: Sequence[InputFeatures]
+    response_data: Mapping[str, KindData]
+    test_input_examples: Optional[Sequence[InputFeatures]] = None
+    validation_input_examples: Optional[Sequence[InputFeatures]] = None
+    is_pre_split: bool = False
+    test_proportion: float = 0.0
+    validation_proportion_of_train: float = 0.1
+    field_specs: Optional[Mapping[str, FieldSpec]] = None
+    metadata: Optional[Mapping[str, np.array]] = None
+
+
+def split_data(to_split, test_proportion, validation_of_train_proportion, shuffle=True, random_state=None):
+    fro
