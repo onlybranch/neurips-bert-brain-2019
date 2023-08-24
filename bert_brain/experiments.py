@@ -139,4 +139,21 @@ def named_variations(name):
                 ('hp_fmri_{}'.format(subject),), load_from=LoadFrom(
                     'hp_meg',
                     loss_tasks=('hp_meg',))))
-            training_variations.appen
+            training_variations.append(('hp_fmri_{}'.format(subject),))
+        settings = Settings(
+            corpora=(CorpusTypes.HarryPotterCorpus(
+                fmri_subjects=fmri_subjects_,
+                fmri_sentence_mode='ignore',
+                fmri_window_duration=10.1,
+                fmri_minimum_duration_required=9.6,
+                group_meg_sentences_like_fmri=True,
+                meg_kind='leila',
+                meg_subjects=[]),),  # None means everyone
+            optimization_settings=OptimizationSettings(
+                num_train_epochs=30,
+                num_epochs_train_prediction_heads_only=10,
+                num_final_epochs_train_prediction_heads_only=0),
+            filter_when_not_in_loss_keys=(ResponseKind.hp_fmri, ResponseKind.hp_meg))
+        settings.preprocessors[ResponseKind.hp_fmri] = [
+            PreprocessDetrend(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True),
+            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=Tr
