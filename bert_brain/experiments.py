@@ -122,4 +122,21 @@ def named_variations(name):
                 num_train_epochs=30,
                 num_epochs_train_prediction_heads_only=-1,
                 num_final_epochs_train_prediction_heads_only=0),
-            filter_when_not_in_loss
+            filter_when_not_in_loss_keys=(ResponseKind.hp_fmri, ResponseKind.hp_meg))
+        settings.preprocessors[ResponseKind.hp_fmri] = [
+            PreprocessDetrend(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True),
+            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True)]
+        settings.prediction_heads[ResponseKind.hp_fmri] = PredictionHeadSettings(
+            ResponseKind.hp_fmri, KeyedLinear, dict(is_sequence='naked_pooled'))
+        num_runs = 4
+        min_memory = 4 * 1024 ** 3
+    elif name == 'hp_meg_simple_fmri':
+        fmri_subjects_ = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+        # fmri_subjects_ = ['H', 'I', 'K', 'L']
+        training_variations = list()
+        for subject in fmri_subjects_:
+            training_variations.append(TrainingVariation(
+                ('hp_fmri_{}'.format(subject),), load_from=LoadFrom(
+                    'hp_meg',
+                    loss_tasks=('hp_meg',))))
+            training_variations.appen
