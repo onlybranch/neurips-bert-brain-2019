@@ -89,4 +89,17 @@ def named_variations(name):
             PreprocessDetrend(
                 stop_mode='content', metadata_example_group_by='fmri_runs', train_on_all=True),
             PreprocessStandardize(
-   
+                stop_mode='content', metadata_example_group_by='fmri_runs', train_on_all=True, average_axis=None)]
+        settings.preprocessors[ResponseKind.hp_fmri] = [
+            PreprocessDetrend(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True),
+            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True)]
+        settings.prediction_heads[ResponseKind.hp_fmri] = PredictionHeadSettings(
+            ResponseKind.hp_fmri, KeyedLinear, dict(is_sequence='naked_pooled', force_cpu=True))
+        settings.prediction_heads[ResponseKind.hp_meg] = PredictionHeadSettings(
+            ResponseKind.hp_meg, head_type=KeyedLinear, kwargs=dict(is_sequence=True, force_cpu=True))
+        num_runs = 4
+        min_memory = 4 * 1024 ** 3
+    elif name == 'hp_meg_simple_fmri_linear':
+        fmri_subjects_ = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+        # fmri_subjects_ = ['H', 'I', 'K', 'L']
+        
