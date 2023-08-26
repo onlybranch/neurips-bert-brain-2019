@@ -156,4 +156,24 @@ def named_variations(name):
             filter_when_not_in_loss_keys=(ResponseKind.hp_fmri, ResponseKind.hp_meg))
         settings.preprocessors[ResponseKind.hp_fmri] = [
             PreprocessDetrend(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True),
-            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=Tr
+            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True)]
+        settings.prediction_heads[ResponseKind.hp_fmri] = PredictionHeadSettings(
+            ResponseKind.hp_fmri, KeyedLinear, dict(is_sequence='naked_pooled'))
+        num_runs = 100
+        min_memory = 4 * 1024 ** 3
+    elif name == 'hp_HKL_from_I':
+        fmri_subjects_ = ['F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+        training_variations = list()
+        for s in fmri_subjects_:
+            training_variations.append(TrainingVariation(('hp_fmri_{}'.format(s),), load_from=load_from_I))
+            training_variations.append(('hp_fmri_{}'.format(s),))
+        settings = Settings(
+            corpora=(CorpusTypes.HarryPotterCorpus(
+                fmri_subjects=fmri_subjects_,
+                fmri_sentence_mode='ignore',
+                fmri_window_duration=10.1,
+                fmri_minimum_duration_required=9.6,
+                meg_subjects=[]),),
+            optimization_settings=OptimizationSettings(
+                num_train_epochs=10,
+  
