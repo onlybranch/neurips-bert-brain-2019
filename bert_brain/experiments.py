@@ -176,4 +176,22 @@ def named_variations(name):
                 meg_subjects=[]),),
             optimization_settings=OptimizationSettings(
                 num_train_epochs=10,
-  
+                num_epochs_train_prediction_heads_only=-1),
+            filter_when_not_in_loss_keys=(ResponseKind.hp_fmri, ResponseKind.hp_meg))
+        settings.preprocessors[ResponseKind.hp_fmri] = [
+            PreprocessDetrend(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True),
+            PreprocessStandardize(stop_mode=None, metadata_example_group_by='fmri_runs', train_on_all=True)]
+        settings.prediction_heads[ResponseKind.hp_fmri] = PredictionHeadSettings(
+            ResponseKind.hp_fmri, KeyedLinear, dict(is_sequence=False))
+        num_runs = 100
+        min_memory = 4 * 1024 ** 3
+    else:
+        raise ValueError('Unknown name: {}. Valid choices are: \n{}'.format(name.var, '\n'.join(name.tests)))
+
+    return training_variations, settings, num_runs, min_memory, auxiliary_loss_tasks
+
+
+def match_variation(variation_set_name, training_variation):
+    """
+    Given a variation_set_name (the --name argument in run_variations.py) and a training_variation which can be
+    a string, a TrainingVari
