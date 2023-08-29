@@ -658,3 +658,216 @@ class BertMultiPredictionHead(BertPreTrainedModel):
         else:
             # Extract archive to temp dir
             tempdir = tempfile.mkdtemp()
+            logger.info("extracting archive file {} to temp dir {}".format(
+                resolved_archive_file, tempdir))
+            with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+                archive.extractall(tempdir)
+            serialization_dir = tempdir
+        # Load config
+        config_file = os.path.join(serialization_dir, CONFIG_NAME)
+        config = BertConfig.from_json_file(config_file)
+        logger.info("Model config {}".format(config))
+        # Instantiate model.
+        model = cls(config, *inputs, **kwargs)
+        if state_dict is None and not from_tf:
+            weights_path = os.path.join(serialization_dir, WEIGHTS_NAME)
+            if map_location == 'default_map_location':
+                map_location = 'cpu' if not torch.cuda.is_available() else None
+            state_dict = torch.load(weights_path, map_location)
+        if tempdir:
+            # Clean up temp dir
+            shutil.rmtree(tempdir)
+        if from_tf:
+            # Directly load from a TensorFlow checkpoint
+            weights_path = os.path.join(serialization_dir, TF_WEIGHTS_NAME)
+            return load_tf_weights_in_bert(model, weights_path)
+        # Load from a PyTorch state_dict
+        old_keys = []
+        new_keys = []
+        for key in state_dict.keys():
+            new_key = None
+            if 'gamma' in key:
+                new_key = key.replace('gamma', 'weight')
+            if 'beta' in key:
+                new_key = key.replace('beta', 'bias')
+            if new_key:
+                old_keys.append(key)
+                new_keys.append(new_key)
+        for old_key, new_key in zip(old_keys, new_keys):
+            state_dict[new_key] = state_dict.pop(old_key)
+
+        missing_keys = []
+        unexpected_keys = []
+        error_msgs = []
+        # copy state_dict so _load_from_state_dict can modify it
+        metadata = getattr(state_dict, '_metadata', None)
+        state_dict = state_dict.copy()
+        if metadata is not None:
+            state_dict._metadata = metadata
+
+        def load(module, prefix=''):
+            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+            # noinspection PyProtectedMember
+            module._load_from_state_dict(
+                state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs)
+            # noinspection PyProtectedMember
+            for name, child in module._modules.items():
+                if child is not None:
+                    load(child, prefix + name + '.')
+
+        start_prefix = ''
+        if not hasattr(model, 'bert') and any(s.startswith('bert.') for s in state_dict.keys()):
+            start_prefix = 'bert.'
+        load(model, prefix=start_prefix)
+        if len(missing_keys) > 0:
+            logger.info("Weights of {} not initialized from pretrained model: {}".format(
+                model.__class__.__name__, missing_keys))
+        if len(unexpected_keys) > 0:
+            logger.info("Weights from pretrained model not used in {}: {}".format(
+                model.__class__.__name__, unexpected_keys))
+        if len(error_msgs) > 0:
+            raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+                model.__class__.__name__, "\n\t".join(error_msgs)))
+        return model
+
+    def forward(self, batch, dataset):
+        sequence_output, pooled_output = self.bert(
+            batch['token_ids'],
+            token_type_ids=batch['type_ids'] if 'type_ids' in batch else None,
+            attention_mask=batch['mask'] if 'mask' in batch else None,
+            output_all_encoded_layers=True)
+        # noinspection PyCallingNonCallable
+        return self.prediction_head(sequence_output, pooled_output, batch, dataset)
+
+    def to(self, *args, **kwargs):
+
+        # noinspection PyProtectedMember
+        device, dtype, non_blocking = torch._C._nn._parse_to(*args, **kwargs)
+
+        if dtype is not None:
+            if not dtype.is_floating_point:
+                raise TypeError('nn.Module.to only accepts floating point '
+                                'dtypes, but got desired dtype={}'.format(dtype))
+
+        forced_cpu = list()
+
+        def set_forced_cpu(module):
+            for child in module.children():
+                set_forced_cpu(child)
+            force_cpu = getattr(module, 'force_cpu', False)
+            if force_cpu:
+                def set_forced_cpu_tensor(t):
+                    forced_cpu.append(t)
+                    return t
+                module._apply(set_forced_cpu_tensor)
+
+        set_forced_cpu(self)
+
+        def is_forced_cpu(t):
+            for have in forced_cpu:
+                if have.is_set_to(t):
+                    return True
+            return False
+
+        def convert(t):
+            if is_forced_cpu(t):
+                return t.to(torch.device('cpu'), dtype if t.is_floating_point() else None, non_blocking)
+            else:
+                return t.to(device, dtype if t.is_floating_point() else None, non_blocking)
+
+        self._apply(convert)
+
+    def cuda(self, device=None):
+        forced_cpu = list()
+
+        def set_forced_cpu(module):
+            for child in module.children():
+                set_forced_cpu(child)
+            force_cpu = getattr(module, 'force_cpu', False)
+            if force_cpu:
+                def set_forced_cpu_tensor(t):
+                    forced_cpu.append(t)
+                    return t
+
+                # noinspection PyProtectedMember
+                module._apply(set_forced_cpu_tensor)
+
+        set_forced_cpu(self)
+
+        def is_forced_cpu(t):
+            for have in forced_cpu:
+                if have.is_set_to(t):
+                    return True
+            return False
+
+        def convert(t):
+            if is_forced_cpu(t):
+                return t.cpu()
+            return t.cuda(device)
+        return self._apply(convert)
+
+
+class OutputCache:
+
+    def __init__(self, raw_output, batch, dropout_layer, supplement, naked_pooled_supplement, is_multi_layer):
+        self.raw_output = raw_output
+        self.batch = batch
+        self.dropout_layer = dropout_layer
+        self.supplement = supplement
+        self.naked_pooled_supplement = naked_pooled_supplement
+        if is_multi_layer:
+            assert(isinstance(self.raw_output, list))
+            self._cache = [None] * len(self.raw_output)
+            self._naked_pooled = [None] * len(self.raw_output)
+        else:
+            assert(not isinstance(self.raw_output, list))
+            self._cache = None
+            self._naked_pooled = None
+
+    def _get(self, index, naked_pooled=False):
+        if index is not None:
+            if self._cache[index] is not None:
+                if naked_pooled:
+                    return self._naked_pooled[index]
+                return self._cache[index]
+            x = self.raw_output[index]
+        else:
+            if self._cache is not None:
+                return self._cache
+            x = self.raw_output
+        if self.dropout_layer is not None:
+            x = self.dropout_layer(x)
+        if self.naked_pooled_supplement is not None:
+            y = self.naked_pooled_supplement(x, self.batch)
+        else:
+            y = x
+        if self.supplement is not None:
+            x = self.supplement(x, self.batch)
+        if index is not None:
+            self._cache[index] = x
+            self._naked_pooled[index] = y[:, 0]
+        else:
+            self._cache = x
+        if naked_pooled:
+            return self._naked_pooled[index]
+        return x
+
+    @property
+    def value(self):
+        if isinstance(self._cache, list):
+            raise ValueError('Cannot call value on multi-layer OutputCache, use __getitem__ instead')
+        return self._get(None)
+
+    def naked_pooled(self, item):
+        if not isinstance(self._cache, list):
+            raise ValueError('Cannot call naked_pooled on a non-multi-layer OutputCache')
+        if item is None:
+            raise ValueError('None is not a valid index')
+        return self._get(item, naked_pooled=True)
+
+    def __getitem__(self, item):
+        if not isinstance(self._cache, list):
+            raise ValueError('Cannot call __getitem__ on a non-multi-layer OutputCache, use value instead')
+        if item is None:
+            raise ValueError('None is not a valid index')
+        return self._get(item)
