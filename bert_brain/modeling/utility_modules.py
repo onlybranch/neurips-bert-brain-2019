@@ -72,4 +72,24 @@ def k_data_ids(k, data_ids, return_indices=False, check_unique=False):
 
 class GroupConcat(torch.nn.Module):
 
-    def __init_
+    def __init__(self, num_per_group):
+        super().__init__()
+        self.num_per_group = num_per_group
+
+    # noinspection PyMethodMayBeStatic
+    def forward(self, x, groupby):
+
+        # first attach an example_id to the groups to ensure that we don't concat across examples in the batch
+
+        # array of shape (batch, sequence, 1) which identifies example
+        example_ids = torch.arange(
+            groupby.size()[0], device=x.device).view((groupby.size()[0], 1, 1)).repeat((1, groupby.size()[1], 1))
+
+        # indices to ensure stable sort, and to give us indices_sort
+        indices = torch.arange(groupby.size()[0] * groupby.size()[1], device=x.device).view(groupby.size() + (1,))
+
+        # -> (batch, sequence, 3): attach example_id to each group and add indices to guarantee stable sort
+        groupby = torch.cat((example_ids, groupby.view(groupby.size() + (1,)), indices), dim=2)
+
+        # -> (batch * sequence, 3)
+        groupby = groupby.view((g
