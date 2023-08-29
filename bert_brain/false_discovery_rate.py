@@ -45,4 +45,22 @@ def fdr_correction(p_values, alpha=0.05, method='by', axis=None):
     indices_all = np.reshape(
         np.arange(indicator_alternative.shape[axis]),
         (1,) * axis + (indicator_alternative.shape[axis],) + (1,) * (len(indicator_alternative.shape) - 1 - axis))
-    indices_max = np.n
+    indices_max = np.nanmax(np.where(indicator_alternative, indices_all, np.nan), axis=axis, keepdims=True).astype(int)
+    indicator_alternative = indices_all <= indices_max
+    del indices_all
+
+    p_values = np.clip(
+        np.take(
+            np.minimum.accumulate(
+                np.take(p_values / correction_factor, np.arange(p_values.shape[axis] - 1, -1, -1), axis=axis),
+                axis=axis),
+            np.arange(p_values.shape[axis] - 1, -1, -1),
+            axis=axis),
+        a_min=0,
+        a_max=1)
+
+    indices_sorted = np.argsort(indices_sorted, axis=axis)
+    p_values = np.take_along_axis(p_values, indices_sorted, axis=axis)
+    indicator_alternative = np.take_along_axis(indicator_alternative, indices_sorted, axis=axis)
+
+    return np.reshape(indicator_alternative, shape), np.reshape(p_values, shape)
