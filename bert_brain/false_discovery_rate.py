@@ -19,4 +19,30 @@ def fdr_correction(p_values, alpha=0.05, method='by', axis=None):
     Returns:
         indicator_alternative: An boolean array with the same shape as p_values_corrected that is True where
             the null hypothesis should be rejected
-        p_values_corrected: The p_values corrected for FDR. Sam
+        p_values_corrected: The p_values corrected for FDR. Same shape as p_values
+    """
+    p_values = np.asarray(p_values)
+
+    shape = p_values.shape
+    if axis is None:
+        p_values = np.reshape(p_values, -1)
+        axis = 0
+
+    indices_sorted = np.argsort(p_values, axis=axis)
+    p_values = np.take_along_axis(p_values, indices_sorted, axis=axis)
+
+    correction_factor = np.arange(1, p_values.shape[axis] + 1) / p_values.shape[axis]
+    if method == 'bh':
+        pass
+    elif method == 'by':
+        c_m = np.sum(1 / np.arange(1, p_values.shape[axis] + 1), axis=axis, keepdims=True)
+        correction_factor = correction_factor / c_m
+    else:
+        raise ValueError('Unrecognized method: {}'.format(method))
+
+    # set everything left of the maximum qualifying p-value
+    indicator_alternative = p_values <= correction_factor * alpha
+    indices_all = np.reshape(
+        np.arange(indicator_alternative.shape[axis]),
+        (1,) * axis + (indicator_alternative.shape[axis],) + (1,) * (len(indicator_alternative.shape) - 1 - axis))
+    indices_max = np.n
