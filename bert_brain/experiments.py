@@ -216,4 +216,4 @@ def match_variation(variation_set_name, training_variation):
         t_name = t.name if isinstance(t, TrainingVariation) else str(tuple(t))
         if training_variation_name == t_name:
             return t
-    raise ValueE
+    raise ValueError('Unable to match training_variation: {}'.format(training_variation))
