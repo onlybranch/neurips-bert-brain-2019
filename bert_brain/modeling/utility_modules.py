@@ -92,4 +92,28 @@ class GroupConcat(torch.nn.Module):
         groupby = torch.cat((example_ids, groupby.view(groupby.size() + (1,)), indices), dim=2)
 
         # -> (batch * sequence, 3)
-        groupby = groupby.view((g
+        groupby = groupby.view((groupby.size()[0] * groupby.size()[1], groupby.size()[2]))
+
+        # filter out the bogus groupby
+        groupby = groupby[groupby[:, 1] >= 0]
+
+        # this allows us to sort the 3 dimensions together
+        groups = torch.unique(groupby, sorted=True, dim=0)
+
+        _, counts = torch.unique_consecutive(groups[:, :2], return_counts=True, dim=0)
+
+        # check that the input is what we expected
+        if torch.min(counts) != self.num_per_group or torch.max(counts) != self.num_per_group:
+            raise ValueError('Expected exactly {} per unique groupby. min count: {}, max count: {}'.format(
+                self.num_per_group, torch.min(counts), torch.max(counts)))
+
+        # get the true groups and example_ids
+        example_ids = groups[:, 0]
+        indices_sort = groups[:, 2]
+        groups = groups[:, 1]
+
+        # -> (batch * sequence, n, m, ..., k)
+        x = x.view((x.size()[0] * x.size()[1],) + x.size()[2:])
+
+        # sort x so that grouped items are together
+     
