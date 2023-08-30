@@ -140,4 +140,26 @@ class GroupPool(torch.nn.Module):
         example_ids = torch.arange(
             groupby.size()[0], device=x.device).view((groupby.size()[0], 1, 1)).repeat((1, groupby.size()[1], 1))
         # -> (batch, sequence, 2): attach example_id to each group
-        groupby = torch.cat((example_ids, gr
+        groupby = torch.cat((example_ids, groupby.view(groupby.size() + (1,))), dim=2)
+
+        # -> (batch * sequence, 2)
+        groupby = groupby.view((groupby.size()[0] * groupby.size()[1], groupby.size()[2]))
+
+        # each group is a (example_id, group) tuple
+        groups, group_indices = torch.unique(groupby, sorted=True, return_inverse=True, dim=0)
+
+        # split the groups into the true groups and example_ids
+        example_ids = groups[:, 0]
+        groups = groups[:, 1]
+
+        # -> (batch * sequence, 1, 1, ..., 1)
+        group_indices = group_indices.view((x.size()[0] * x.size()[1],) + (1,) * (len(x.size()) - 2))
+
+        # -> (batch * sequence, n, m, ..., k)
+        group_indices = group_indices.repeat((1,) + x.size()[2:])
+
+        # -> (batch * sequence, n, m, ..., k)
+        x = x.view((x.size()[0] * x.size()[1],) + x.size()[2:])
+
+        pooled = torch.zeros((groups.size()[0],) + x.size()[1:], dtype=x.dtype, device=x.device)
+        pooled.scatter_add_(dim=0, index=group_i
