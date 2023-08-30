@@ -116,4 +116,28 @@ class GroupConcat(torch.nn.Module):
         x = x.view((x.size()[0] * x.size()[1],) + x.size()[2:])
 
         # sort x so that grouped items are together
-     
+        x = x[indices_sort]
+
+        x = x.view((x.size()[0] // self.num_per_group, self.num_per_group) + x.size()[1:])
+        groups = groups.view((groups.size()[0] // self.num_per_group, self.num_per_group))
+        example_ids = example_ids.view((example_ids.size()[0] // self.num_per_group, self.num_per_group))
+
+        # all of these are the same on axis=1, so take the first
+        groups = groups[:, 0]
+        example_ids = example_ids[:, 0]
+
+        return x, groups, example_ids
+
+
+class GroupPool(torch.nn.Module):
+
+    # noinspection PyMethodMayBeStatic
+    def forward(self, x, groupby):
+
+        # first attach an example_id to the groups to ensure that we don't pool across examples in the batch
+
+        # array of shape (batch, sequence, 1) which identifies example
+        example_ids = torch.arange(
+            groupby.size()[0], device=x.device).view((groupby.size()[0], 1, 1)).repeat((1, groupby.size()[1], 1))
+        # -> (batch, sequence, 2): attach example_id to each group
+        groupby = torch.cat((example_ids, gr
