@@ -162,4 +162,29 @@ class GroupPool(torch.nn.Module):
         x = x.view((x.size()[0] * x.size()[1],) + x.size()[2:])
 
         pooled = torch.zeros((groups.size()[0],) + x.size()[1:], dtype=x.dtype, device=x.device)
-        pooled.scatter_add_(dim=0, index=group_i
+        pooled.scatter_add_(dim=0, index=group_indices, src=x)
+
+        # -> (batch * sequence)
+        group_indices = group_indices[:, 0]
+        counts = torch.zeros(groups.size()[0], dtype=x.dtype, device=x.device)
+        counts.scatter_add_(
+            dim=0, index=group_indices, src=torch.ones(len(group_indices), dtype=x.dtype, device=x.device))
+        counts = counts.view(counts.size() + (1,) * len(pooled.size()[1:]))
+        pooled = pooled / counts
+
+        # filter out groups < 0
+        indicator_valid = groups >= 0
+        pooled = pooled[indicator_valid]
+        groups = groups[indicator_valid]
+        example_ids = example_ids[indicator_valid]
+
+        return pooled, groups, example_ids
+
+
+class Conv1DCausal(torch.nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True,
+                 transpose_axes=None, should_transpose_input=True, should_transpose_output=True):
+        super().__init__()
+        self.transpose_axes = transpose_axes
+        self.should_t
