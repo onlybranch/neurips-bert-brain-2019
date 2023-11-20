@@ -1,0 +1,2 @@
+# neurips-bert-brain-2019
+This repository contains code for using BERT model to predict brain activity data. Originally developed by a previous owner, it's now being maintained and updated by 'onlybranch'. Please feel free to contribute and enhance the functionality.
